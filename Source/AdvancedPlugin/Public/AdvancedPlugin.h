@@ -1,4 +1,4 @@
-// Copyright Alexander. All Rights Reserved.
+// Copyright AlexanderAL123. All Rights Reserved.
 
 #pragma once
 
@@ -11,4 +11,11 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+private:
+	void PhysSceneInit(FPhysScene* PhysScene);
+	void PhysSceneTerm(FPhysScene* PhysScene);
+
+	FDelegateHandle OnPhysSceneInitHandle;
+	FDelegateHandle OnPhysSceneTermHandle;
 };
