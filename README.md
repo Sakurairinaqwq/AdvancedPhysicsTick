@@ -25,20 +25,39 @@ Use these functions to interact with VehicleMesh in AAdvancedPawn:
 ```
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddForce(const FVector& Force, bool bAllowSubstepping = true, bool bAccelChange = false);
-```
-```
+
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddForceAtLocation(const FVector& Force, const FVector& Position, bool bAllowSubstepping = true, bool bIsLocalForce = false);
-```
-```
+
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddImpulse(const FVector& Impulse, bool bVelChange);
-```
-```
+
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddTorqueInRadians(const FVector& Torque, bool bAllowSubstepping = true, bool bAccelChange = false);
 ```
 	> NOTE. THREADSAFE! CALL THIS FUNCTIONS ONLY AdvancedTick in BP or PhysicsTick in C++!
+
+Use VehicleState for get transform and velocity in VehicleMesh
+```
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+FTransform GetVehicleWorldTransform() const { return VehicleState.VehicleWorldTransform; }
+
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+FVector GetVehicleWorldVelocity() const { return VehicleState.VehicleWorldVelocity; }
+
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+FVector GetVehicleWorldVelocityNormal() const { return VehicleState.VehicleWorldVelocityNormal; }
+
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+float GetVehicleWorldVelocitySize() const { return GetVehicleWorldVelocity().Size(); }
+
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+float GetVehicleForwardSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleXVector); }
+
+UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+float GetVehicleRightSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleYVector); }
+```
+	> NOTE. CALL ANYWHERE!
 
 And you can use in Blueprints!
 Blueprint graph implementation
@@ -54,19 +73,21 @@ FVector GetLinearVelocityAtPoint(const UPrimitiveComponent* TargetComponent, con
 ```
 #### Params:
 -   `InComponent`: Component to which the force will be applied with bSimulatePhysics = true.
--   `InPoint`: Point.
+-   `InPoint`: Point velocity.
 
 	> NOTE. THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick in BP or PhysicsTick in C++!
 
 ### 3. AdvancedTick and AdvancedNativeTick.
 You can override TickVehicle and PhysicsTick in your class for advanced physics logic:
 
+1. TickVehicle (AdvancedNativeTick)
 ```
 virtual void TickVehicle(float DeltaTime) override;
 ```
 #### Parameters:
 -   `DeltaTime`: Delta = 1/60, userful for control wake/sleeping vehicle mesh, visual effects, sounds and animations.
 
+2. PhysicsTick (AdvancedTick)
 ```
 virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle) override;
 ```
@@ -75,9 +96,8 @@ virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos:
 -   `SimTime`: Current simulation time.
 
 Blueprint graph implementation
-
 <div align="center">
-    <img src="Resources/Docs/BPEvents.png" alt="BPEvents" width="600">
+    <img src="Resources/Docs/BPEvents.png" alt="BPEvents" width="800">
 </div>
 
 ### 3. Stat and Debugging
@@ -101,7 +121,7 @@ Stat ```DECLARE_CYCLE_STAT``` Allows you to see in PIE the number of calls and t
 stat AdvancedPawn
 ```
 <div align="center">
-    <img src="Resources/Docs/StatAdvancedPawn.png" alt="StatAdvancedPawn" width="600">
+    <img src="Resources/Docs/StatAdvancedPawn.png" alt="StatAdvancedPawn" width="800">
 </div>
 
 2. For AdvancedCallback calls ProcessInputs_Internal and OnPreSimulate_Internal
@@ -109,7 +129,7 @@ stat AdvancedPawn
 stat RacingManager
 ```
 <div align="center">
-    <img src="Resources/Docs/StatRacingnManager.png" alt="StatRacingnManager" width="600">
+    <img src="Resources/Docs/StatRacingManager.png" alt="StatRacingManager" width="800">
 </div>
 
 Throbleshooting and TODO
@@ -123,11 +143,11 @@ TODO:
 
 Where is it used?
 =====================
-
 1. NWheelVehicle project - Author: https://boosty.to/ivan_novozhilov
 <div align="center">
-    <img src="Resources/Docs/RedCar.png" alt="NWRedCar" width="600">
-    <img src="Resources/Docs/Car.png" alt="NWCar" width="600">
+    <img src="Resources/Docs/RedCar.png" alt="NWRedCar" width="700">
+    <img src="Resources/Docs/Car.png" alt="NWCar" width="700">
 </div>
+
 
 You can use this plugin anywhere and for free, except for those that do not comply with the Unreal Engine brand.
