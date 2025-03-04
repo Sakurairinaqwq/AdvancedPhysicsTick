@@ -1,75 +1,19 @@
-# Advanced Physics Tick
+Advanced Physics Tick
+=====================
 
-![Banner](Resources/Docs/Banner.png)
+<div align="center">
 
-Плагин Advanced Physics Tick для Unreal Engine 5 упрощает работу с асинхронной физикой Chaos, обеспечивающий улучшенный контроль над физическим моделированием.
+![Alt text](banner.png)
 
-# Основные возможности
+</div>
 
-* Поддержка асинхронной физики: Легкая интеграция и управление асинхронными вычислениями физики для повышения производительности и реализма.
-* Удобный интерфейс: Простые в использовании Blueprint функции.
-* Инструменты отладки: Визуализация и логирование для упрощения решения проблем, связанных с физикой.
+Advanced Physics Tick is a plugin for Unreal Engine 5 designed to work with asynchronous Chaos physics. It is specifically focused on vehicle simulation and includes a single UStaticMesh (VehicleMesh) that provides more robust and improved control over the physics model. This plugin is not a general-purpose plugin, but is designed with an emphasis on accurate and flexible motion simulation for Vehicles.
 
-## Установка
+Setup
+=========
 
-* Клонируйте или скачайте репозиторий.
-* Поместите папку плагина в каталог плагинов вашего проекта Unreal Engine 5.
-* Запустите редактор.
-
-## Информация
-
-### 1. Добавление силы к компоненту
-
-Используйте функцию `AddForce`, чтобы применить силу к компоненту с включенной физикой:
+1. Clone or download the repository from GitHub:
 ```
-UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-void AddForce(const UPrimitiveComponent* InComponent, FVector InForce, bool bAccelChange = false);
+git clone https://github.com/your-repo/AdvancedPhysicsTick.git
 ```
-#### Параметры:
--   `InComponent`: Компонент, к которому будет применена сила с bSimulatePhysics = true.
--   `InForce`: Вектор силы.
-
-	> ПРИМЕЧАНИЕ. Используйте в эту функцию только в AdvancedTick или TickAsync, чтобы обеспечить безопасность потока.
-
-Этот пункт применим ко всем остальными функциями `AddForceAtLocation`, `AddTorque` и т.д.
-
-### 2. Метод TickAsync
-
-Вы можете переопределить `TickAsync` в своем классе для расширенной физики логики:
-
-```
-virtual void TickAsync(float DeltaTime, float SimTime) override;
-```
-#### Параметры:
--   `DeltaTime`: Дельта времени.
--   `SimTime`: Текущее время моделирования.
-
-## Консольные команды
-
--   Включение визуализации сил виде стрелок.
-    ```
-    p.AdvancedPawn.DrawDebugAllForces 1
-    ```
-    
--   Настройка размера стрелок, по умолчанию 0.005f
-    ```
-    p.AdvancedPawn.DrawDebugLinesSize
-    ```
-    
-![CarsPNG](Resources/Docs/Car.png)
-
-### Стат команды
-
-Мониторинг вызовов функций
-
-```
-stat AdvancedManager
-```
-
-![Stat](Resources/Docs/Stat.png)
-
-
-## Поиск неисправностей
-
-* **Thread Safety:** Использование IsGameThread() для FRigidBodyHandle_Internal не является хорошим решением
-* Отсутствие Input и Output ChaosSimCallback
+2. Place the plugin folder in the plugins directory of your Unreal Engine 5 project.
