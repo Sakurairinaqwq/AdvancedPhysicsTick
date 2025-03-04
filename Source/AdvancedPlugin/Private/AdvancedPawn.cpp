@@ -1,274 +1,173 @@
-// Copyright Alexander. All Rights Reserved.
+// Copyright AlexanderAL123. All Rights Reserved.
 
 #include "AdvancedPawn.h"
+#include "Components/StaticMeshComponent.h"
+#include "PhysicsEngine/PhysicsSettings.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
 #include "Chaos/Particle/ParticleUtilities.h"
-#include "Chaos/Utilities.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 #include "Chaos/DebugDrawQueue.h"
 #include "DrawDebugHelpers.h"
 #include "DisplayDebugHelpers.h"
 
-DECLARE_CYCLE_STAT(TEXT("AdvancedPawn:TickAsync"), STAT_AdvancedManager_TickAsync, STATGROUP_AdvancedManager);
+extern FAdvancedDebugParams GAdvVehicleDebugParams;
 
-static float DrawDebugLinesSize = 0.0005f;
-static bool DrawDebugTextForces = false;
-static bool DrawDebugAllForces = false;
+static FAutoConsoleVariableRef CVarRacingVehicleDrawAllForces(TEXT("p.RacingVehicle.AdvPawn.DrawAllForces"), GAdvVehicleDebugParams.DrawDebugAllForces,
+	TEXT("Show debug draw"),
+	FConsoleVariableDelegate::CreateLambda([](IConsoleVariable* Var)
+		{
+			IConsoleVariable* ChaosDebugCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("p.Chaos.DebugDraw.Enabled"));
+			if (ChaosDebugCVar)
+			{
+				if (Var->GetInt() > 0) ChaosDebugCVar->Set(1, ECVF_SetByConsole); // Enable
+				else ChaosDebugCVar->Set(0, ECVF_SetByConsole); // Disable
+			}
+		})
+);
 
-FAutoConsoleVariableRef CVarDebugAllForceIndex(TEXT("p.AdvancedPawn.DrawDebugAllForces"), DrawDebugAllForces, TEXT("Toggle drawing 3D arrows representing forces applied by AddForce."));
-FAutoConsoleVariableRef CVarDebugTextForcesIndex(TEXT("p.AdvancedPawn.DrawDebugTextForces"), DrawDebugTextForces, TEXT("Toggle drawing 3D text representing forces applied by AddForce."));
-FAutoConsoleVariableRef CVarDebugLinesSizeIndex(TEXT("p.AdvancedPawn.DrawDebugLinesSize"), DrawDebugLinesSize, TEXT("Set the size/length multiplier for 3D debug arrows drawn by AddForce."));
+static FAutoConsoleVariableRef CVarRacingVehicleDrawDebugTextForces(TEXT("p.RacingVehicle.AdvPawn.DrawDebugTextForces"), GAdvVehicleDebugParams.DrawDebugTextForces, TEXT("TODO"));
+static FAutoConsoleVariableRef CVarRacingVehicleDrawDebugLinesSize(TEXT("p.RacingVehicle.AdvPawn.DrawDebugLinesSize"), GAdvVehicleDebugParams.DrawDebugLinesSize, TEXT("TODO"));
+
+DECLARE_CYCLE_STAT(TEXT("AdvancedPawn:TickVehicle"), STAT_AdvancedPawn_TickVehicle, STATGROUP_AdvancedPawn);
+DECLARE_CYCLE_STAT(TEXT("AdvancedPawn:PhysicsTick"), STAT_AdvancedPawn_PhysicsTick, STATGROUP_AdvancedPawn);
 
 AAdvancedPawn::AAdvancedPawn(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer), World(nullptr), AsyncCallback(nullptr)
+	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VehicleMesh"));
+	Mesh->BodyInstance.bSimulatePhysics = true;
+	Mesh->BodyInstance.bNotifyRigidBodyCollision = true;
+	Mesh->BodyInstance.bUseCCD = true;
+	Mesh->BodyInstance.bIgnoreAnalyticCollisions = false;
+	Mesh->BodyInstance.SetInertiaConditioningEnabled(false);
+	Mesh->bApplyImpulseOnDamage = 0;
+	Mesh->SetCollisionProfileName(UCollisionProfile::Vehicle_ProfileName);
+	Mesh->SetGenerateOverlapEvents(true);
+	Mesh->SetCanEverAffectNavigation(false);
+	Mesh->SetHiddenInSceneCapture(true);
+	Mesh->bCastContactShadow = false;
+	Mesh->bRenderInDepthPass = false;
+	Mesh->bReceivesDecals = false;
+	Mesh->bRenderCustomDepth = true;
+	Mesh->CustomDepthStencilValue = 5;
+	RootComponent = Mesh;
 }
 
 void AAdvancedPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	World = GetWorld();
-	if (!World || !World->IsGameWorld()) return;
-
-	FPhysScene* PhysScene = World->GetPhysicsScene();
-	if (!PhysScene || !PhysScene->GetSolver()) return;
-	AsyncCallback = PhysScene->GetSolver()->CreateAndRegisterSimCallbackObject_External<FAdvancedManagerAsyncCallback>();
-	AsyncCallback->InitAsyncCallback(this);
+	if (GetWorld()->IsGameWorld())
+	{
+		FPhysScene* PhysScene = GetWorld()->GetPhysicsScene();
+		if (PhysScene && FAdvancedManager::GetAdvancedManagerFromScene(PhysScene))
+		{
+			VehicleState.CaptureState(GetBodyInstance());
+			FAdvancedManager* AManager = FAdvancedManager::GetAdvancedManagerFromScene(PhysScene);
+			AManager->AddVehicle(this);
+		}
+	}
 }
 
 void AAdvancedPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	if (!AsyncCallback) return;
-	FPhysScene* PhysScene = GetWorld()->GetPhysicsScene();
-	PhysScene->GetSolver()->UnregisterAndFreeSimCallbackObject_External(AsyncCallback);
-	AsyncCallback = nullptr;
+	FAdvancedManager* AManager = FAdvancedManager::GetAdvancedManagerFromScene(this->GetWorld()->GetPhysicsScene());
+	AManager->RemoveVehicle(this);
 }
 
-void AAdvancedPawn::TickAsync(float DeltaTime, float SimTime)
+void AAdvancedPawn::TickVehicle(float DeltaTime)
 {
-	SCOPE_CYCLE_COUNTER(STAT_AdvancedManager_TickAsync);
+	SCOPE_CYCLE_COUNTER(STAT_AdvancedPawn_TickVehicle);
 
-	// Called this function in FAdvancedManagerAsyncCallback::OnPreSimulate_Internal
+	VehicleState.CaptureState(GetBodyInstance());
+	AdvancedNativeTick(DeltaTime);
+}
+
+void AAdvancedPawn::PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle)
+{
+	SCOPE_CYCLE_COUNTER(STAT_AdvancedPawn_PhysicsTick);
+
+	World = InWorld;
+	RigidHandle = InHandle;
+
+	if (!World || !RigidHandle) return;
+
+	VehicleState.CaptureState(RigidHandle);
 	AdvancedTick(DeltaTime, SimTime);
 }
 
-void AAdvancedPawn::AddForce(const UPrimitiveComponent* InComponent, FVector Force, bool bAccelChange)
+void AAdvancedPawn::ApplyVehicleForces(Chaos::FRigidBodyHandle_Internal* InHandle)
 {
-	if (!InComponent) return;
-	const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-	if (!Handle) return;
+	VehicleForce.Apply(InHandle);
+}
 
-	if (!IsInGameThread())
-	{
-		Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-		if (!ensure(RigidHandle)) return;
-
-		if (bAccelChange)
-		{
-			const float RigidMass = RigidHandle->M();
-			const Chaos::FVec3 Acceleration = Force * RigidMass;
-			RigidHandle->AddForce(Acceleration, false);
-		}
-		else RigidHandle->AddForce(Force, false);
+void AAdvancedPawn::AddForce(const FVector& Force, bool bAllowSubstepping, bool bAccelChange)
+{
+	VehicleForce.Add(FVehicleForces::FRacingVehicleApplyForce_DATA(Force, bAllowSubstepping, bAccelChange));
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-		if (DrawDebugAllForces)
-		{
-			FVector Position = RigidHandle->X();
-			::DrawDebugDirectionalArrow(GetWorld(), Position, Position + Force * DrawDebugLinesSize, 20.0f, FColor::White, false, 0, SDPG_World, 2.0f);
-
-			if (DrawDebugTextForces)
-			{
-				const FString ForceLabel = FString::Printf(TEXT("Force: %.2f"), Force.Size());
-				::DrawDebugString(GetWorld(), Position + FVector(0, 0, 50), ForceLabel, nullptr, FColor::White, 0, true);
-			}
-		}
-#endif
+	if (GAdvVehicleDebugParams.DrawDebugAllForces)
+	{
+		FVector Position = RigidHandle->X();
+		Chaos::FDebugDrawQueue::GetInstance().DrawDebugDirectionalArrow(Position, Position + Force * GAdvVehicleDebugParams.DrawDebugLinesSize, 20.0f, FColor::White, false, 0, SDPG_World, 2.0f);
 	}
+#endif
 }
 
-void AAdvancedPawn::AddForceAtLocation(const UPrimitiveComponent* InComponent, FVector Force, FVector Position, bool bIsLocalForce)
+void AAdvancedPawn::AddForceAtLocation(const FVector& Force, const FVector& Position, bool bAllowSubstepping, bool bIsLocalForce)
 {
-	if (!InComponent) return;
-	const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-	if (!Handle) return;
-
-	if (!IsInGameThread())
-	{
-		Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-		if (!ensure(RigidHandle)) return;
-
-		const Chaos::FVec3 WorldCOM = Chaos::FParticleUtilitiesGT::GetCoMWorldPosition(RigidHandle);
-		const Chaos::FVec3 WorldTorque = Chaos::FVec3::CrossProduct(Position - WorldCOM, Force);
-		RigidHandle->AddForce(Force, false);
-		RigidHandle->AddTorque(WorldTorque, false);
+	VehicleForce.Add(FVehicleForces::FRacingVehicleApplyForceAtPosition_DATA(Force, Position, bAllowSubstepping, bIsLocalForce));
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-		if (DrawDebugAllForces)
-		{
-			::DrawDebugDirectionalArrow(GetWorld(), Position, Position + Force * DrawDebugLinesSize, 20.0f, FColor::White, false, 0, SDPG_World, 2.0f);
-
-			if (DrawDebugTextForces)
-			{
-				const FString ForceLabel = FString::Printf(TEXT("Force: %.2f"), Force.Size());
-				::DrawDebugString(GetWorld(), Position + FVector(0, 0, 50), ForceLabel, nullptr, FColor::White, 0, true);
-			}
-		}
+	if (GAdvVehicleDebugParams.DrawDebugAllForces)
+	{
+		Chaos::FDebugDrawQueue::GetInstance().DrawDebugDirectionalArrow(Position, Position + Force * GAdvVehicleDebugParams.DrawDebugLinesSize, 20.0f, FColor::White, false, 0, SDPG_World, 2.0f);
+	}
 #endif
-	}
 }
 
-void AAdvancedPawn::AddTorque(const UPrimitiveComponent* InComponent, FVector Torque, bool bAccelChange)
+void AAdvancedPawn::AddImpulse(const FVector& Impulse, bool bVelChange)
 {
-	if (!InComponent) return;
-	const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-	if (!Handle) return;
+	VehicleForce.Add(FVehicleForces::FRacingVehicleAddImpulse_DATA(Impulse, bVelChange));
 
-	if (!IsInGameThread())
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	if (GAdvVehicleDebugParams.DrawDebugAllForces)
 	{
-		Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-		if (!ensure(RigidHandle)) return;
-
-		if (bAccelChange) RigidHandle->AddTorque(Chaos::FParticleUtilitiesXR::GetWorldInertia(RigidHandle) * Torque, false);
-		else RigidHandle->AddTorque(Torque, false);
+		FVector Position = VehicleState.VehicleWorldCOM;
+		Chaos::FDebugDrawQueue::GetInstance().DrawDebugDirectionalArrow(Position, Position + Impulse * GAdvVehicleDebugParams.DrawDebugLinesSize, 20.0f, FColor::Red, false, 0, SDPG_World, 2.0f);
 	}
+#endif
 }
 
-void AAdvancedPawn::AddImpulse(const UPrimitiveComponent* InComponent, FVector Impulse, bool bVelChange)
+void AAdvancedPawn::AddImpulseAtPosition(const FVector& Impulse, const FVector& Position)
 {
-	if (!InComponent) return;
-	const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-	if (!Handle) return;
+	VehicleForce.Add(FVehicleForces::FRacingVehicleAddImpulseAtPosition_DATA(Impulse, Position));
 
-	if (!IsInGameThread())
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	if (GAdvVehicleDebugParams.DrawDebugAllForces)
 	{
-		Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-		if (!ensure(RigidHandle)) return;
-
-		if (bVelChange) RigidHandle->SetLinearImpulse(RigidHandle->LinearImpulse() + RigidHandle->M() * Impulse, false);
-		else RigidHandle->SetLinearImpulse(RigidHandle->LinearImpulse() + Impulse, false);
+		Chaos::FDebugDrawQueue::GetInstance().DrawDebugDirectionalArrow(Position, Position + Impulse * GAdvVehicleDebugParams.DrawDebugLinesSize, 20.0f, FColor::Red, false, 0, SDPG_World, 2.0f);
 	}
+#endif
 }
 
-void AAdvancedPawn::AddImpulseAtLocation(const UPrimitiveComponent* InComponent, FVector Impulse, FVector Position)
+void AAdvancedPawn::AddTorqueInRadians(const FVector& Torque, bool bAllowSubstepping, bool bAccelChange)
 {
-	if (!InComponent) return;
-	const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-	if (!Handle) return;
-
-	if (!IsInGameThread())
-	{
-		Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-		if (!ensure(RigidHandle)) return;
-
-		const Chaos::FVec3 WorldCOM = Chaos::FParticleUtilitiesGT::GetCoMWorldPosition(RigidHandle);
-		const Chaos::FVec3 AngularImpulse = Chaos::FVec3::CrossProduct(Position - WorldCOM, Impulse);
-		RigidHandle->SetLinearImpulse(RigidHandle->LinearImpulse() + Impulse, false);
-		RigidHandle->SetAngularImpulse(RigidHandle->AngularImpulse() + AngularImpulse, false);
-	}
+	VehicleForce.Add(FVehicleForces::FRacingVehicleAddTorqueInRadians_DATA(Torque, bAllowSubstepping, bAccelChange));
 }
 
-FTransform AAdvancedPawn::GetPrimitiveWorldTransform(const UPrimitiveComponent* InComponent) const
+FVector AAdvancedPawn::GetLinearVelocityAtPoint(const UPrimitiveComponent* TargetComponent, const FVector& InPoint)
 {
-	if (InComponent)
+	if (TargetComponent)
 	{
-		const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-		if (Handle)
+		FBodyInstance* BodyInstance = TargetComponent->GetBodyInstance();
+		if (BodyInstance)
 		{
-			if (!IsInGameThread())
-			{
-				Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-				if (ensure(RigidHandle)) return FTransform(RigidHandle->R(), RigidHandle->X());
-			}
-			else
-			{
-				Chaos::FRigidBodyHandle_External& RigidHandle = Handle->GetGameThreadAPI();
-				return FTransform(RigidHandle.R(), RigidHandle.X());
-			}
-		}
-	}
-
-	return FTransform();
-}
-
-FVector AAdvancedPawn::GetLinearVelocity(const UPrimitiveComponent* InComponent)
-{
-	if (InComponent)
-	{
-		const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-		if (Handle)
-		{
-			if (!IsInGameThread())
-			{
-				Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI();
-				if (ensure(RigidHandle)) return RigidHandle->V();
-			}
-			else
-			{
-				Chaos::FRigidBodyHandle_External& RigidHandle = Handle->GetGameThreadAPI();
-				return RigidHandle.V();
-			}
-		}
-	}
-
-	return FVector::ZeroVector;
-}
-
-FVector AAdvancedPawn::GetLinearVelocityAtPoint(const UPrimitiveComponent* InComponent, FVector Point)
-{
-	if (InComponent)
-	{
-		const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-		if (Handle)
-		{
-			if (!IsInGameThread())
-			{
-				if (Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI())
-				{
-					if (ensure(RigidHandle))
-					{
-						const Chaos::FVec3 COM = RigidHandle->X() + RigidHandle->R() * RigidHandle->CenterOfMass();
-						const Chaos::FVec3 Diff = Point - COM;
-						return RigidHandle->V() - Chaos::FVec3::CrossProduct(Diff, RigidHandle->W());
-					}
-				}
-			}
-			else
-			{
-				Chaos::FRigidBodyHandle_External& RigidHandle = Handle->GetGameThreadAPI();
-				const Chaos::FVec3 COM = RigidHandle.X() + RigidHandle.R() * RigidHandle.CenterOfMass();
-				const Chaos::FVec3 Diff = Point - COM;
-				return RigidHandle.V() - Chaos::FVec3::CrossProduct(Diff, RigidHandle.W());
-			}
-		}
-	}
-
-	return FVector::ZeroVector;
-}
-
-FVector AAdvancedPawn::GetPrimitiveCOM(const UPrimitiveComponent* InComponent) const
-{
-	if (InComponent)
-	{
-		const auto Handle = InComponent->GetBodyInstance()->ActorHandle;
-		if (Handle)
-		{
-			if (!IsInGameThread())
-			{
-				if (Chaos::FRigidBodyHandle_Internal* RigidHandle = Handle->GetPhysicsThreadAPI())
-				{
-					if (ensure(RigidHandle)) return RigidHandle->X() + RigidHandle->R() * RigidHandle->CenterOfMass();
-				}
-			}
-			else
-			{
-				Chaos::FRigidBodyHandle_External& RigidHandle = Handle->GetGameThreadAPI();
-				return RigidHandle.X() + RigidHandle.R() * RigidHandle.CenterOfMass();
-			}
+			return FVehicleForces::GetVelocityAtPoint(BodyInstance, InPoint);
 		}
 	}
 

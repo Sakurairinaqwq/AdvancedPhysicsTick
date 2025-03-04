@@ -1,4 +1,4 @@
-// Copyright Alexander. All Rights Reserved.
+// Copyright AlexanderAL123. All Rights Reserved.
 
 #pragma once
 
@@ -7,117 +7,137 @@
 #include "PBDRigidsSolver.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 #include "GameFramework/Pawn.h"
-#include "AdvancedManagerAsyncCallback.h"
+#include "Chaos/Utilities.h"
+#include "AdvancedManager.h"
+#include "AdvancedAsyncCallback.h"
+#include "AdvancedUtility.h"
 #include "AdvancedPawn.generated.h"
+
+DECLARE_STATS_GROUP(TEXT("AdvancedPawn"), STATGROUP_AdvancedPawn, STATGROUP_Advanced);
 
 UCLASS(BlueprintType)
 class ADVANCEDPLUGIN_API AAdvancedPawn : public APawn
 {
+	friend class FAdvancedManager;
+	friend class FAdvancedAsyncCallback;
+
 	GENERATED_BODY()
 public:
 	AAdvancedPawn(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
-	//~ Begin AActor Interface.
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
 	virtual void BeginPlay() override;
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	//~ End AActor Interface
-	
-	/**
-	 * Override this function to implement custom logic to be executed every physics step.
-	 *
-	 * @param DeltaTime - Physics step delta time
-	 * @param SimTime - Total sim time since the sim began.
-	 */
-	virtual void TickAsync(float DeltaTime, float SimTime);
+
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
+	virtual void TickVehicle(float DeltaTime);
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
+	virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle);
 
 protected:
-	/** Event called every advanced physics tick */
+	/** Event called PhysicThread */
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Tick"))
 	void AdvancedTick(float DeltaTime, float SimTime);
 
-public:
-	/**
-	 *	Add a force to a single rigid body.
-	 *  This is like a 'thruster'. Good for adding a burst over some (non zero) time. Should be called every frame for the duration of the force.
-	 *  CALL THIS FUNCTION ONLY AdvancedTick or TickAsync!
-	 *
-	 *	@param	InForce			Force vector to apply. Magnitude indicates strength of force.
-	 *  @param  bAccelChange	If true, Force is taken as a change in acceleration instead of a physical force (i.e. mass will have no effect).
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	void AddForce(const UPrimitiveComponent* InComponent, FVector InForce, bool bAccelChange = false);
+	/** Event called (ChaosScene.PreTick) */
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Native Tick"))
+	void AdvancedNativeTick(float DeltaTime);
 
-	/**
-	 *	Add a force to a single rigid body at a particular location in world space.
-	 *  This is like a 'thruster'. Good for adding a burst over some (non zero) time. Should be called every frame for the duration of the force.
-	 *  CALL THIS FUNCTION ONLY AdvancedTick or TickAsync!
-	 *
-	 *	@param Force			Force vector to apply. Magnitude indicates strength of force.
-	 *	@param Location			Location to apply force, in world space.
-	 *	@param bIsLocalForce	If a SkeletalMeshComponent, name of body to apply force to. 'None' indicates root body.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	void AddForceAtLocation(const UPrimitiveComponent* InComponent, FVector Force, FVector Position, bool bIsLocalForce = false);
-
-	/**
-	 *	Add a torque to a single rigid body.
-	 *  CALL THIS FUNCTION ONLY AdvancedTick or TickAsync!
-	 * 
-	 *	@param Torque		Torque to apply. Direction is axis of rotation and magnitude is strength of torque.
-	 *	@param BoneName		If a SkeletalMeshComponent, name of body to apply torque to. 'None' indicates root body.
-	 *  @param bAccelChange If true, Torque is taken as a change in angular acceleration instead of a physical torque (i.e. mass will have no effect).
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	void AddTorque(const UPrimitiveComponent* InComponent, FVector Torque, bool bAccelChange = false);
-
-	/**
-	 *	Add an impulse to a single rigid body. Good for one time instant burst.
-	 *  CALL THIS FUNCTION ONLY AdvancedTick or TickAsync!
-	 *
-	 *	@param	Impulse		Magnitude and direction of impulse to apply.
-	 *	@param	BoneName	If a SkeletalMeshComponent, name of body to apply impulse to. 'None' indicates root body.
-	 *	@param	bVelChange	If true, the Strength is taken as a change in velocity instead of an impulse (ie. mass will have no effect).
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	void AddImpulse(const UPrimitiveComponent* InComponent, FVector Impulse, bool bVelChange = false);
-
-	/**
-	 *	Add an impulse to a single rigid body at a specific location.
-	 *  CALL THIS FUNCTION ONLY AdvancedTick or TickAsync!
-	 *
-	 *	@param	Impulse		Magnitude and direction of impulse to apply.
-	 *	@param	Location	Point in world space to apply impulse at.
-	 *	@param	BoneName	If a SkeletalMeshComponent, name of bone to apply impulse to. 'None' indicates root body.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	void AddImpulseAtLocation(const UPrimitiveComponent* InComponent, FVector Impulse, FVector Position);
-
-	/* Get the current component-to-world transform for this component */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics", meta = (DisplayName = "Get World Transform"))
-	FTransform GetPrimitiveWorldTransform(const UPrimitiveComponent* InComponent) const;
-
-	/**
-	 *	Get the linear velocity of a single body.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	FVector GetLinearVelocity(const UPrimitiveComponent* InComponent);
-
-	/**
-	 *	Get the linear velocity of a point on a single body.
-	 *	@param Point			Point is specified in world space.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics")
-	FVector GetLinearVelocityAtPoint(const UPrimitiveComponent* InComponent, FVector Point);
-
-	/*
-	 *	Get the center of mass in primitive component
-	 */
-	UFUNCTION(BlueprintCallable, Category = "AdvancedTick|Physics", meta = (DisplayName = "Get Center of Mass"))
-	FVector GetPrimitiveCOM(const UPrimitiveComponent* InComponent) const;
+private:
+	/** The main skeletal mesh associated with this Vehicle */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = RacingPhysics, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UStaticMeshComponent> Mesh;
 
 public:
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
+	FBodyInstance* GetBodyInstance() { return Mesh->GetBodyInstance(); }
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
+	const FBodyInstance* GetBodyInstance() const { return Mesh->GetBodyInstance(); }
+
+public:
+	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
+	void ApplyVehicleForces(Chaos::FRigidBodyHandle_Internal* InHandle);
+
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	void AddForce(const FVector& Force, bool bAllowSubstepping = true, bool bAccelChange = false);
+
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	void AddForceAtLocation(const FVector& Force, const FVector& Position, bool bAllowSubstepping = true, bool bIsLocalForce = false);
+
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	void AddImpulse(const FVector& Impulse, bool bVelChange);
+	
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	void AddImpulseAtPosition(const FVector& Impulse, const FVector& Position);
+	
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	void AddTorqueInRadians(const FVector& Torque, bool bAllowSubstepping = true, bool bAccelChange = false);
+
+	/**
+	 *	TODO DESCRIPTION FOR ADVANCEDPLUGIN_API
+	 *  THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick or PhysicsTick!
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
+	FVector GetLinearVelocityAtPoint(const UPrimitiveComponent* TargetComponent, const FVector& InPoint);
+
+public:
+	/** Returns vehicle world transform */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FTransform GetVehicleWorldTransform() const { return VehicleState.VehicleWorldTransform; }
+
+	/** Returns vehicle world velocity */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleWorldVelocity() const { return VehicleState.VehicleWorldVelocity; }
+
+	/** Returns vehicle world velocity normal */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleWorldVelocityNormal() const { return VehicleState.VehicleWorldVelocityNormal; }
+
+	/** Returns vehicle world velocity size */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleWorldVelocitySize() const { return GetVehicleWorldVelocity().Size(); }
+
+	/** Returns vehicle forward speed */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleForwardSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleXVector); }
+
+	/** Returns vehicle right speed */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleRightSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleYVector); }
+
+	/** Returns vehicle KMH speed */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleKMHSpeed() const { return FMath::Abs(GetVehicleForwardSpeed() * 0.036f); }
+
+	/** Returns vehicle MPH speed */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleMPHSpeed() const { return FMath::Abs(GetVehicleForwardSpeed() * 0.022369f); }
 
 private:
 	UWorld* World;
-	FAdvancedManagerAsyncCallback* AsyncCallback;
+	Chaos::FRigidBodyHandle_Internal* RigidHandle;
+
+	FVehicleForces VehicleForce;
+	FVehicleStatus VehicleState;
 };
