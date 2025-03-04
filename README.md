@@ -10,18 +10,21 @@ Advanced Physics Tick is a plugin for Unreal Engine 5 designed to work with asyn
 Setup
 =====================
 
-1. Clone or download the repository from GitHub:
+- Clone or download the repository from GitHub:
 ```
 git clone https://github.com/your-repo/AdvancedPhysicsTick.git
 ```
-2. Place the plugin folder in the plugins directory of your Unreal Engine 5 project.
-3. Run Unreal Engine 5 project.
+- Place the plugin folder in the plugins directory of your Unreal Engine 5 project.
+- Run Unreal Engine 5 project.
 
 Documentation
 =====================
 
 ### 1. AddForce, AddForceAtLocation and etc...
-Use these functions to interact with VehicleMesh in AAdvancedPawn:
+
+-   Use these functions to interact with VehicleMesh in AAdvancedPawn
+
+	> THREADSAFE! CALL THIS FUNCTIONS ONLY AdvancedTick in BP or PhysicsTick in C++!
 ```
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddForce(const FVector& Force, bool bAllowSubstepping = true, bool bAccelChange = false);
@@ -35,9 +38,13 @@ void AddImpulse(const FVector& Impulse, bool bVelChange);
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 void AddTorqueInRadians(const FVector& Torque, bool bAllowSubstepping = true, bool bAccelChange = false);
 ```
-	> NOTE. THREADSAFE! CALL THIS FUNCTIONS ONLY AdvancedTick in BP or PhysicsTick in C++!
 
-Use VehicleState for get transform and velocity in VehicleMesh
+---
+
+-   Use VehicleState for get transform and velocity in VehicleMesh
+
+    > CALL ANYWHERE!
+
 ```
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
 FTransform GetVehicleWorldTransform() const { return VehicleState.VehicleWorldTransform; }
@@ -57,16 +64,16 @@ float GetVehicleForwardSpeed() const { return FVector::DotProduct(GetVehicleWorl
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
 float GetVehicleRightSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleYVector); }
 ```
-	> NOTE. CALL ANYWHERE!
 
-And you can use in Blueprints!
+---
 Blueprint graph implementation
 
-<div align="center">
-    <img src="Resources/Docs/BPGraph.png" alt="BPGraph" width="600">
+<div align="left">
+    <img src="Resources/Docs/BPGraph.png" alt="BPGraph" width="1000">
 </div>
 
 ### 2. GetLinearVelocityAtPoint.
+
 ```
 UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Physics")
 FVector GetLinearVelocityAtPoint(const UPrimitiveComponent* TargetComponent, const FVector& InPoint);
@@ -75,37 +82,42 @@ FVector GetLinearVelocityAtPoint(const UPrimitiveComponent* TargetComponent, con
 -   `InComponent`: Component to which the force will be applied with bSimulatePhysics = true.
 -   `InPoint`: Point velocity.
 
-	> NOTE. THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick in BP or PhysicsTick in C++!
+	> THREADSAFE! CALL THIS FUNCTION ONLY AdvancedTick in BP or PhysicsTick in C++!
+---
 
 ### 3. AdvancedTick and AdvancedNativeTick.
+
 You can override TickVehicle and PhysicsTick in your class for advanced physics logic:
 
-1. TickVehicle (AdvancedNativeTick)
+**TickVehicle (AdvancedNativeTick)**
 ```
 virtual void TickVehicle(float DeltaTime) override;
 ```
-#### Parameters:
--   `DeltaTime`: Delta = 1/60, userful for control wake/sleeping vehicle mesh, visual effects, sounds and animations.
+Parameters:
+-   `DeltaTime`: GameThread, userful for control wake/sleeping vehicle mesh, visual effects, sounds and animations.
 
-2. PhysicsTick (AdvancedTick)
+    > AdvancedNativeTick can sometimes be called twice and also has a minimum DeltaTime of 1/20.
+
+---
+
+**PhysicsTick (AdvancedTick)**
 ```
 virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle) override;
 ```
-#### Parameters:
+Parameters:
 -   `DeltaTime`: PhysicThread, userful for simulation and apply forces.
 -   `SimTime`: Current simulation time.
 
+---
 Blueprint graph implementation
-<div align="center">
-    <img src="Resources/Docs/BPEvents.png" alt="BPEvents" width="800">
+<div align="left">
+    <img src="Resources/Docs/BPEvents.png" alt="BPEvents" width="600">
 </div>
 
 ### 3. Stat and Debugging
 Unfortunately, you can't currently use DrawDebugHelpers in a physics thread, otherwise it will crash the UnrealEngine or cause HandledEnsure type errors.
-
 For PhysicThread use in C++
 Chaos::FDebugDrawQueue::GetInstance().DrawDebug.....
-
 or for Blueprints use CVars AdvancedPawn
 
 Stat command for drawing applied forces as lines and arrows.
@@ -149,5 +161,5 @@ Where is it used?
     <img src="Resources/Docs/Car.png" alt="NWCar" width="700">
 </div>
 
-
-You can use this plugin anywhere and for free, except for those that do not comply with the Unreal Engine brand.
+---
+You can use this plugin anywhere and for free, except for those that do not comply with the ***Unreal Engine*** brand.
