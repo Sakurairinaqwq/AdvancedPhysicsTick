@@ -42,8 +42,9 @@ void AddTorqueInRadians(const FVector& Torque, bool bAllowSubstepping = true, bo
 
 And you can use in Blueprints!
 Blueprint graph implementation
+
 <div align="center">
-![BPGraph](Resources/Docs/BPGraph.png)
+    <img src="Resources/Docs/BPGraph.png" alt="BPGraph" width="600">
 </div>
 
 ### 2. GetLinearVelocityAtPoint.
@@ -74,8 +75,9 @@ virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos:
 -   `SimTime`: Current simulation time.
 
 Blueprint graph implementation
+
 <div align="center">
-![BPEvents](Resources/Docs/BPEvents.png)
+    <img src="Resources/Docs/BPEvents.png" alt="BPEvents" width="600">
 </div>
 
 ### 3. Stat and Debugging
@@ -99,7 +101,7 @@ Stat ```DECLARE_CYCLE_STAT``` Allows you to see in PIE the number of calls and t
 stat AdvancedPawn
 ```
 <div align="center">
-![StatAdvancedPawn](Resources/Docs/StatAdvancedPawn.png)
+    <img src="Resources/Docs/StatAdvancedPawn.png" alt="StatAdvancedPawn" width="600">
 </div>
 
 2. For AdvancedCallback calls ProcessInputs_Internal and OnPreSimulate_Internal
@@ -107,7 +109,7 @@ stat AdvancedPawn
 stat RacingManager
 ```
 <div align="center">
-![StatRacingManager](Resources/Docs/StatRacingManager.png)
+    <img src="Resources/Docs/StatRacingnManager.png" alt="StatRacingnManager" width="600">
 </div>
 
 Throbleshooting and TODO
@@ -123,13 +125,9 @@ Where is it used?
 =====================
 
 1. NWheelVehicle project - Author: https://boosty.to/ivan_novozhilov
-
 <div align="center">
-![NW1](Resources/Docs/RedCar.png)
-</div>
-
-<div align="center">
-![NW2](Resources/Docs/Car.png)
+    <img src="Resources/Docs/RedCar.png" alt="NWRedCar" width="600">
+    <img src="Resources/Docs/Car.png" alt="NWCar" width="600">
 </div>
 
 You can use this plugin anywhere and for free, except for those that do not comply with the Unreal Engine brand.
