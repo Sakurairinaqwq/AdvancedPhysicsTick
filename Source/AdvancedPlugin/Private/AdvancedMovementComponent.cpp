@@ -8,6 +8,9 @@
 #include "PhysicsProxy/SuspensionConstraintProxy.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 
+DECLARE_CYCLE_STAT(TEXT("Advanced Movement:TickVehicle"), STAT_AdvancedPawn_TickVehicle, STATGROUP_AdvancedMovement);
+DECLARE_CYCLE_STAT(TEXT("Advanced Movement:PhysicsTick"), STAT_AdvancedPawn_PhysicsTick, STATGROUP_AdvancedMovement);
+
 UAdvancedMovementComponent::UAdvancedMovementComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -15,6 +18,12 @@ UAdvancedMovementComponent::UAdvancedMovementComponent(const FObjectInitializer&
 	PrimaryComponentTick.bStartWithTickEnabled = true;
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.SetTickFunctionEnable(true);
+}
+
+void UAdvancedMovementComponent::Init(AAdvancedPawn* InPawn)
+{
+	check(InPawn);
+	Pawn = InPawn;
 }
 
 void UAdvancedMovementComponent::TickVehicle(float DeltaTime)

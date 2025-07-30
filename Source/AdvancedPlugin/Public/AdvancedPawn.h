@@ -15,6 +15,8 @@
 
 DECLARE_STATS_GROUP(TEXT("AdvancedPawn"), STATGROUP_AdvancedPawn, STATGROUP_Advanced);
 
+class UAdvancedMovementComponent;
+
 UCLASS(BlueprintType)
 class ADVANCEDPLUGIN_API AAdvancedPawn : public APawn
 {
@@ -33,7 +35,7 @@ public:
 	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
 	virtual void TickVehicle(float DeltaTime);
 	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
-	virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle);
+	virtual void TickPhysics(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle);
 
 protected:
 	/** Event called PhysicThread */

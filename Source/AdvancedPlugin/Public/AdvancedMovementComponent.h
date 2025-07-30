@@ -9,13 +9,17 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "AdvancedMovementComponent.generated.h"
 
+DECLARE_STATS_GROUP(TEXT("AdvancedMovement"), STATGROUP_AdvancedMovement, STATGROUP_Advanced);
+
 class AAdvancedPawn;
 
-UCLASS(ClassGroup = (NWheelPhysics), meta = (BlueprintSpawnableComponent), HideCategories = (ComponentTick, PlanarMovement, Activation, Velocity, ComponentReplication, Cooking))
+UCLASS(meta = (BlueprintSpawnableComponent), HideCategories = (ComponentTick, PlanarMovement, Activation, Velocity, ComponentReplication, Cooking))
 class ADVANCEDPLUGIN_API UAdvancedMovementComponent : public UPawnMovementComponent
 {
 	GENERATED_UCLASS_BODY()
 public:
+	/** */
+	virtual void Init();
 	/** Tick for vehicle tuning and other state such as user input. */
 	virtual void TickVehicle(float DeltaTime);
 	/** Physics tick for advanced movement component */
