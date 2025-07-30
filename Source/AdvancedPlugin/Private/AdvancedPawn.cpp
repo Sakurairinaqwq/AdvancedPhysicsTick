@@ -1,6 +1,7 @@
 // Copyright AlexanderAL123. All Rights Reserved.
 
 #include "AdvancedPawn.h"
+#include "AdvancedMovementComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "Physics/Experimental/PhysScene_Chaos.h"
@@ -59,6 +60,9 @@ void AAdvancedPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	MovementComponent = FindComponentByClass<UAdvancedMovementComponent>();
+	if (MovementComponent) MovementComponent->Init(this);
+
 	if (GetWorld()->IsGameWorld())
 	{
 		FPhysScene* PhysScene = GetWorld()->GetPhysicsScene();
@@ -82,8 +86,6 @@ void AAdvancedPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AAdvancedPawn::TickVehicle(float DeltaTime)
 {
 	SCOPE_CYCLE_COUNTER(STAT_AdvancedPawn_TickVehicle);
-
-	VehicleState.CaptureState(GetBodyInstance());
 	AdvancedNativeTick(DeltaTime);
 }
 
@@ -98,6 +100,8 @@ void AAdvancedPawn::PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime,
 
 	VehicleState.CaptureState(RigidHandle);
 	AdvancedTick(DeltaTime, SimTime);
+
+	if (MovementComponent) MovementComponent->PhysicsTick();
 }
 
 void AAdvancedPawn::ApplyVehicleForces(Chaos::FRigidBodyHandle_Internal* InHandle)
@@ -164,8 +168,7 @@ FVector AAdvancedPawn::GetLinearVelocityAtPoint(const UPrimitiveComponent* Targe
 {
 	if (TargetComponent)
 	{
-		FBodyInstance* BodyInstance = TargetComponent->GetBodyInstance();
-		if (BodyInstance)
+		if (FBodyInstance* BodyInstance = TargetComponent->GetBodyInstance())
 		{
 			return FVehicleForces::GetVelocityAtPoint(BodyInstance, InPoint);
 		}

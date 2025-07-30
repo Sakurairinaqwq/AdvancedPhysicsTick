@@ -3,7 +3,7 @@
 	"Version": 12,
 	"VersionName": "2.0",
 	"FriendlyName": "Advanced Physics Tick",
-	"Description": "Simple and convenient integration of PhysicThread Chaos",
+	"Description": "Simple and convenient integration of PhysicThread Chaos (For Vehicles)",
 	"Category": "Physics",
 	"CreatedBy": "Alexander",
 	"CreatedByURL": "https://github.com/AlexanderZhmurkin/AdvancedPhysicsTick",

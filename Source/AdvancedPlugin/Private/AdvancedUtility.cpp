@@ -5,25 +5,9 @@
 #include "Chaos/Utilities.h"
 #include "PhysicsProxy/SingleParticlePhysicsProxy.h"
 
-void FVehicleStatus::CaptureState(const FBodyInstance* TargetInstance)
-{
-	if (!TargetInstance) return;
+static float VEHICLE_MAX_DRIFT_ANGLE = 90.0f;
 
-	VehicleWorldTransform = TargetInstance->GetUnrealWorldTransform();
-	VehicleWorldVelocity = TargetInstance->GetUnrealWorldVelocity();
-	VehicleWorldVelocityNormal = VehicleWorldVelocity.GetSafeNormal();
-	VehicleWorldAngularVelocity = TargetInstance->GetUnrealWorldAngularVelocityInRadians();
-	VehicleWorldCOM = TargetInstance->GetCOMPosition();
-
-	VehicleXVector = VehicleWorldTransform.GetUnitAxis(EAxis::X);
-	VehicleYVector = VehicleWorldTransform.GetUnitAxis(EAxis::Y);
-	VehicleZVector = VehicleWorldTransform.GetUnitAxis(EAxis::Z);
-
-	VehicleForwardSpeed = FVector::DotProduct(VehicleWorldVelocity, VehicleXVector);
-	VehicleRightSpeed = FVector::DotProduct(VehicleWorldVelocity, VehicleYVector);
-}
-
-void FVehicleStatus::CaptureState(const Chaos::FRigidBodyHandle_Internal* TargetHandle)
+void FVehicleStatus::CaptureState(float DeltaTime, float GravityZ, const Chaos::FRigidBodyHandle_Internal* TargetHandle)
 {
 	if (!TargetHandle) return;
 
@@ -40,6 +24,14 @@ void FVehicleStatus::CaptureState(const Chaos::FRigidBodyHandle_Internal* Target
 
 	VehicleForwardSpeed = FVector::DotProduct(VehicleWorldVelocity, VehicleXVector);
 	VehicleRightSpeed = FVector::DotProduct(VehicleWorldVelocity, VehicleYVector);
+
+	VehicleDriftAngle = VehicleForwardSpeed > 400.0f ? FMath::Clamp(FMath::RadiansToDegrees(FMath::Atan2(VehicleRightSpeed, VehicleForwardSpeed)), -VEHICLE_MAX_DRIFT_ANGLE, VEHICLE_MAX_DRIFT_ANGLE) : 0.0f;
+
+	VehicleLocalVelocity = VehicleWorldTransform.InverseTransformVector(VehicleWorldVelocity);
+	VehicleLocalAcceleration = (VehicleLocalVelocity - LastVehicleLocalVelocity) / DeltaTime;
+	VehicleLocalGForce = FMath::Abs(GravityZ) > 0.0f ? VehicleLocalAcceleration / FMath::Abs(GravityZ) : FVector::ZeroVector;
+
+	LastVehicleLocalVelocity = VehicleLocalVelocity;
 }
 
 void FVehicleForces::AddForce(Chaos::FRigidBodyHandle_Internal* RigidHandle, const FRacingVehicleApplyForce_DATA& DataIn)

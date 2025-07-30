@@ -23,17 +23,22 @@ public:
 		, VehicleWorldVelocityNormal(FVector::ZeroVector)
 		, VehicleWorldAngularVelocity(FVector::ZeroVector)
 		, VehicleWorldCOM(FVector::ZeroVector)
-		, VehicleLocalVelocity(FVector::ZeroVector)
 		, VehicleXVector(FVector::ZeroVector)
 		, VehicleYVector(FVector::ZeroVector)
 		, VehicleZVector(FVector::ZeroVector)
 		, VehicleForwardSpeed(0.0f)
 		, VehicleRightSpeed(0.0f)
+		, VehicleDriftAngle(0.0f)
+		, VehicleDriftSide(0.0f)
+		, VehicleLocalVelocity(FVector::ZeroVector)
+		, VehicleLocalAcceleration(FVector::ZeroVector)
+		, VehicleLocalGForce(FVector::ZeroVector)
+		, VehicleSleeping(false)
+		, VehicleSleepingCounter(0)
+		, LastVehicleLocalVelocity(FVector::ZeroVector)
 	{
 	}
 
-	/** Body Instance cache capture state */
-	void CaptureState(const FBodyInstance* TargetInstance);
 	/** Particle Handle cache capture state */
 	void CaptureState(const Chaos::FRigidBodyHandle_Internal* TargetHandle);
 
@@ -43,14 +48,25 @@ public:
 	FVector VehicleWorldAngularVelocity;
 	FVector VehicleWorldCOM;
 
-	FVector VehicleLocalVelocity;
-
 	FVector VehicleXVector;   //X Vector
 	FVector VehicleYVector;   //Y Vector
 	FVector VehicleZVector;   //Z Vector
 
 	float VehicleForwardSpeed;
 	float VehicleRightSpeed;
+
+	float VehicleDriftAngle;
+	float VehicleDriftSide;
+
+	FVector VehicleLocalVelocity;
+	FVector VehicleLocalAcceleration;
+	FVector VehicleLocalGForce;
+
+	bool VehicleSleeping;
+	int VehicleSleepingCounter;
+
+private:
+	FVector LastVehicleLocalVelocity;
 };
 
 class ADVANCEDPLUGIN_API FVehicleForces

@@ -37,17 +37,21 @@ public:
 
 protected:
 	/** Event called PhysicThread */
-	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Tick"))
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Physic Thread"))
 	void AdvancedTick(float DeltaTime, float SimTime);
 
 	/** Event called (ChaosScene.PreTick) */
-	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Native Tick"))
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Advanced Game Thread"))
 	void AdvancedNativeTick(float DeltaTime);
 
 private:
-	/** The main skeletal mesh associated with this Vehicle */
+	/** The main skeletal mesh associated with this Pawn */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = RacingPhysics, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UStaticMeshComponent> Mesh;
+
+	/** The movement component associated with this Pawn */
+	UPROPERTY(NoClear)
+	UAdvancedMovementComponent* MovementComponent;
 
 public:
 	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
