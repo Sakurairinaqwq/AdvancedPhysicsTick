@@ -40,7 +40,7 @@ public:
 	}
 
 	/** Particle Handle cache capture state */
-	void CaptureState(const Chaos::FRigidBodyHandle_Internal* TargetHandle);
+	void CaptureState(float DeltaTime, float GravityZ, const Chaos::FRigidBodyHandle_Internal* TargetHandle);
 
 	FTransform VehicleWorldTransform;
 	FVector VehicleWorldVelocity;

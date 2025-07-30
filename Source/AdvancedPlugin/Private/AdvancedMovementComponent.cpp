@@ -45,7 +45,7 @@ void UAdvancedMovementComponent::OnCreatePhysicsState()
 		FPhysScene* PhysScene = GetWorld()->GetPhysicsScene();
 		if (PhysScene)
 		{
-			Vehicle = Cast<AAdvancedPawn>(GetOwner());
+			Pawn = Cast<AAdvancedPawn>(GetOwner());
 		}
 	}
 }
@@ -53,7 +53,7 @@ void UAdvancedMovementComponent::OnCreatePhysicsState()
 void UAdvancedMovementComponent::OnDestroyPhysicsState()
 {
 	Super::OnDestroyPhysicsState();
-	Vehicle = nullptr;
+	Pawn = nullptr;
 }
 
 bool UAdvancedMovementComponent::ShouldCreatePhysicsState() const

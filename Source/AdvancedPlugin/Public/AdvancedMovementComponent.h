@@ -19,7 +19,7 @@ class ADVANCEDPLUGIN_API UAdvancedMovementComponent : public UPawnMovementCompon
 	GENERATED_UCLASS_BODY()
 public:
 	/** */
-	virtual void Init();
+	virtual void Init(AAdvancedPawn* InPawn);
 	/** Tick for vehicle tuning and other state such as user input. */
 	virtual void TickVehicle(float DeltaTime);
 	/** Physics tick for advanced movement component */
@@ -44,5 +44,5 @@ public:
 #endif
 
 private:
-	AAdvancedPawn* Vehicle;
+	AAdvancedPawn* Pawn;
 };

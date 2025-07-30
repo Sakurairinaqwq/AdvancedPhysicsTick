@@ -35,7 +35,7 @@ public:
 	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
 	virtual void TickVehicle(float DeltaTime);
 	/** TODO DESCRIPTION FOR ADVANCEDPLUGIN_API */
-	virtual void TickPhysics(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle);
+	virtual void PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime, Chaos::FRigidBodyHandle_Internal* InHandle);
 
 protected:
 	/** Event called PhysicThread */
@@ -124,6 +124,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
 	float GetVehicleWorldVelocitySize() const { return GetVehicleWorldVelocity().Size(); }
 
+	/** Returns vehicle world center of mass */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleWorldCOM() const { return VehicleState.VehicleWorldCOM; }
+
+	/** Returns vehicle X vector */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleXVector() const { return VehicleState.VehicleXVector; }
+
+	/** Returns vehicle Y vector */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleYVector() const { return VehicleState.VehicleYVector; }
+
+	/** Returns vehicle Z vector */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleZVector() const { return VehicleState.VehicleZVector; }
+
 	/** Returns vehicle forward speed */
 	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
 	float GetVehicleForwardSpeed() const { return FVector::DotProduct(GetVehicleWorldVelocity(), VehicleState.VehicleXVector); }
@@ -139,6 +155,26 @@ public:
 	/** Returns vehicle MPH speed */
 	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
 	float GetVehicleMPHSpeed() const { return FMath::Abs(GetVehicleForwardSpeed() * 0.022369f); }
+
+	/** Returns vehicle drift angle */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleDriftAngle() const { return VehicleState.VehicleDriftAngle; }
+
+	/** Returns vehicle drift side */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	float GetVehicleDriftSide() const { return VehicleState.VehicleDriftSide; }
+
+	/** Returns vehicle local velocity */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleLocalVelocity() const { return VehicleState.VehicleLocalVelocity; }
+
+	/** Returns vehicle local acceleration */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|State")
+	FVector GetVehicleLocalAcceleration() const { return VehicleState.VehicleLocalAcceleration; }
+
+	/** Returns vehicle G local force */
+	UFUNCTION(BlueprintCallable, Category = "AdvancedPawn|Statee")
+	FVector GetVehicleLocalGForce() const { return VehicleState.VehicleLocalGForce; }
 
 private:
 	UWorld* World;

@@ -26,6 +26,7 @@ void FVehicleStatus::CaptureState(float DeltaTime, float GravityZ, const Chaos::
 	VehicleRightSpeed = FVector::DotProduct(VehicleWorldVelocity, VehicleYVector);
 
 	VehicleDriftAngle = VehicleForwardSpeed > 400.0f ? FMath::Clamp(FMath::RadiansToDegrees(FMath::Atan2(VehicleRightSpeed, VehicleForwardSpeed)), -VEHICLE_MAX_DRIFT_ANGLE, VEHICLE_MAX_DRIFT_ANGLE) : 0.0f;
+	VehicleDriftSide = FMath::Sign(VehicleDriftAngle);
 
 	VehicleLocalVelocity = VehicleWorldTransform.InverseTransformVector(VehicleWorldVelocity);
 	VehicleLocalAcceleration = (VehicleLocalVelocity - LastVehicleLocalVelocity) / DeltaTime;

@@ -68,7 +68,6 @@ void AAdvancedPawn::BeginPlay()
 		FPhysScene* PhysScene = GetWorld()->GetPhysicsScene();
 		if (PhysScene && FAdvancedManager::GetAdvancedManagerFromScene(PhysScene))
 		{
-			VehicleState.CaptureState(GetBodyInstance());
 			FAdvancedManager* AManager = FAdvancedManager::GetAdvancedManagerFromScene(PhysScene);
 			AManager->AddVehicle(this);
 		}
@@ -98,10 +97,9 @@ void AAdvancedPawn::PhysicsTick(UWorld* InWorld, float DeltaTime, float SimTime,
 
 	if (!World || !RigidHandle) return;
 
-	VehicleState.CaptureState(RigidHandle);
+	VehicleState.CaptureState(DeltaTime, -980.0f, RigidHandle);
 	AdvancedTick(DeltaTime, SimTime);
-
-	if (MovementComponent) MovementComponent->PhysicsTick();
+	if (MovementComponent) MovementComponent->PhysicsTick(InWorld, DeltaTime, SimTime, InHandle);
 }
 
 void AAdvancedPawn::ApplyVehicleForces(Chaos::FRigidBodyHandle_Internal* InHandle)
